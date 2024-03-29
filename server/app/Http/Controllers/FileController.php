@@ -154,7 +154,7 @@ class FileController extends Controller
                 // Store and update file
                 if($data['uri'] !== '/') {
                     // File's uri
-                    $fileUri = $user->id . '/' . $data['uri'] . '/' . $file->name;
+                    $fileUri = $data['uri'] === '.' ? $user->id . '/' . $file->name : $user->id . '/' . $data['uri'] . '/' . $file->name;
 
                     // Store file
                     Storage::disk('uploads')->put($fileUri, $storageFile);
@@ -165,10 +165,10 @@ class FileController extends Controller
                     // Update file's uri
                     $file->update([
                         'uri' => $fileUri,
-                        'current_dir' => $data['uri']
+                        'current_dir' => $data['uri'] === '.' ? '/' : $data['uri']
                     ]);
                 }
-
+                
             }
 
             // If name if changed
