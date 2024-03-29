@@ -151,24 +151,24 @@ class FileController extends Controller
                 // Move file to new uri
                 $storageFile = Storage::disk('uploads')->get($file->uri);
 
-                // Create file uri
-                $fileUri = "";
-                if($data['uri'] === '/') {
-                    $fileUri = $file->uri;
-                } else {
+                // Store and update file
+                if($data['uri'] !== '/') {
+                    // File's uri
                     $fileUri = $user->id . '/' . $data['uri'] . '/' . $file->name;
+
+                    // Store file
+                    Storage::disk('uploads')->put($fileUri, $storageFile);
+                    
+                    // Delete old file
+                    Storage::disk('uploads')->delete($file->uri);
+    
+                    // Update file's uri
+                    $file->update([
+                        'uri' => $fileUri,
+                        'current_dir' => $data['uri']
+                    ]);
                 }
 
-                Storage::disk('uploads')->put($fileUri, $storageFile);
-                
-                // Delete old file
-                Storage::disk('uploads')->delete($file->uri);
-
-                // Update file's uri
-                $file->update([
-                    'uri' => $fileUri,
-                    'current_dir' => $data['uri']
-                ]);
             }
 
             // If name if changed

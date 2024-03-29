@@ -57,6 +57,8 @@ class DatabaseSeeder extends Seeder
         FileType::create(['name' => 'docx']);
         FileType::create(['name' => 'ppt']);
         FileType::create(['name' => 'pptx']);
+        FileType::create(['name' => 'xls']);
+        FileType::create(['name' => 'xlsx']);
         FileType::create(['name' => 'txt']);
         FileType::create(['name' => 'zip']);
         FileType::create(['name' => 'rar']);
