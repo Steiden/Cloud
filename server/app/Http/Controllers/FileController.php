@@ -46,8 +46,7 @@ class FileController extends Controller
     {
         try {
             // Get data from request
-            $data = $request->validated();
-            $files = $data->file('files');
+            $files = $request->file('files');
 
             // Get user
             $user = auth()->user();
@@ -66,8 +65,8 @@ class FileController extends Controller
                 }
 
                 // File's uri
-                $fileUri = $data['current_dir'] ? $user->id . '/' . $data['current_dir'] . '/' . $file->hashName() 
-                    : $user->id . '/' . $file->hashName();
+                $currentDir = $request->current_dir;
+                $fileUri = $currentDir ? $user->id . '/' . $currentDir : $user->id . '/';
 
                 // Store file
                 Storage::disk('uploads')->put($fileUri, $file);
@@ -76,8 +75,8 @@ class FileController extends Controller
                 $dataForFile = [
                     'name' => $file->hashName(),
                     'original_name' => $file->getClientOriginalName(),
-                    'uri' => $fileUri,
-                    'current_dir' => $data['current_dir'] ? $data['current_dir'] : '/',
+                    'uri' => $fileUri . $file->hashName(),
+                    'current_dir' => $currentDir ? $currentDir : '/',
                     'size' => $file->getSize(),
                     'file_type_id' => FileType::all()->where('name', $file->extension())->first() ?
                         FileType::all()->where('name', $file->extension())->first()->id :
@@ -92,7 +91,7 @@ class FileController extends Controller
                 // Increase user's disk space in use
                 User::find($user->id)->increment('disk_space_used', $file->size);
 
-                // Create user file in UsersFile
+                // Create user-file relation in UsersFile
                 UsersFile::create([
                     'user_id' => $user->id,
                     'file_id' => $file->id,
@@ -145,6 +144,19 @@ class FileController extends Controller
 
             // Find file
             $file = File::find($id);
+
+            // If nothing to update
+            if (
+                (isset($data['uri']) && $data['uri'] === $file->current_dir) ||
+                (isset($data['uri']) && $data['uri'] === '.' && $file->current_dir === '/') ||
+                (isset($data['name']) && $data['name'] === $file->original_name)
+            ) {
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Nothing to update'
+                ], 400);
+            }
 
 
             // *********************

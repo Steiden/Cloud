@@ -11,5 +11,5 @@ class File extends Model
 
     protected $guarded = false;
 
-    protected $fillable = ['name', 'original_name', 'uri', 'current_dir', 'size', 'file_type_id'];
+    protected $fillable = ['name', 'original_name', 'uri', 'current_dir', 'size', 'file_type_id', 'owner'];
 }

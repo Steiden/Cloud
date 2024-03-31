@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\FileType;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,7 +24,7 @@ class FileResource extends JsonResource
             'current_dir' => $this->current_dir,
             'size' => $this->size,
             'file_type' => new FileTypeResource(FileType::find($this->file_type_id)),
-            'owner' => new UserResource($this->owner),
+            'owner' => new UserResource(User::find($this->owner)),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at
         ];

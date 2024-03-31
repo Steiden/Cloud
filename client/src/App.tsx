@@ -9,13 +9,18 @@ function App() {
     const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault();
 
+        const dataToFetch: Record<string, FileList | string | null> = {
+            "files": files
+        }
+
+        if(uri) dataToFetch["current_dir"] = uri;
+
         const response: Promise<AxiosResponse> = axios.post(
             "http://127.0.0.1:8000/api/files",
-            { 
-                files: files,
-                current_dir: uri },
+            dataToFetch,
             {
                 headers: {
+                    "Content-type": "multipart/form-data",
                     Authorization: `Bearer ${localStorage.getItem("token")}`,
                 },
             }
