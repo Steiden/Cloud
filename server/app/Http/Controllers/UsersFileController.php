@@ -14,13 +14,13 @@ class UsersFileController extends Controller
     public function index()
     {
         try {
-            // Get all users files
-            $usersFiles = UsersFile::all();
+            // Get all user-file relations
+            $usersFiles = UsersFile::all()->where('user_id', auth()->user()->id);
 
-            // Return users files
+            // Return user-file relations
             return response()->json([
                 'success' => true,
-                'message' => 'Users files list',
+                'message' => 'User-files relations',
                 'data' => UsersFileResource::collection($usersFiles)
             ], 200);
         } catch (Exception $ex) {
@@ -37,18 +37,19 @@ class UsersFileController extends Controller
             // Get validated data
             $data = $request->validated();
 
-            // Create new users file if not exists
-            if (!($usersFile = UsersFile::all()->where('user_id', $data['user_id'])->where('file_id', $data['file_id'])->first())) {
+            // Create new user-file relation if not exists
+            if (UsersFile::all()->where('user_id', $data['user_id'])->where('file_id', $data['file_id'])->first()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Users file already exists'
-                ], 404);
+                    'message' => 'User-file relation already exists'
+                ], 400);
             }
+            $usersFile = UsersFile::create($data);
 
-            // Return users file
+            // Return user-file relation
             return response()->json([
                 'success' => true,
-                'message' => 'Users file was created successfully',
+                'message' => 'User-file relation was created successfully',
                 'data' => new UsersFileResource($usersFile->fresh())
             ], 200);
         } catch (Exception $ex) {
@@ -62,21 +63,13 @@ class UsersFileController extends Controller
     public function show($id)
     {
         try {
-            // Get users file
+            // Get user-file relation
             $usersFile = UsersFile::findOrFail($id);
 
-            // If users file not found
-            if (!isset ($usersFile)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Users file not found'
-                ], 404);
-            }
-
-            // Return users file
+            // Return user-file relation
             return response()->json([
                 'success' => true,
-                'message' => 'Users file',
+                'message' => 'User-file relation',
                 'data' => new UsersFileResource($usersFile)
             ], 200);
         } catch (Exception $ex) {
@@ -90,29 +83,21 @@ class UsersFileController extends Controller
     public function update(UpdateRequest $request, $id)
     {
         try {
-            // Find users file
+            // Find user-file relation
             $usersFile = UsersFile::findOrFail($id);
 
-            // If users file not found
-            if (!isset ($usersFile)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Users file not found'
-                ], 404);
-            }
-
-            // If users file update processing is failed
+            // If user-file relation update processing is failed
             if (!$usersFile->updateOrFail($request->validated())) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Users file update failed'
+                    'message' => 'User-file relation was updated failed'
                 ], 500);
             }
 
             // Return updated users file
             return response()->json([
                 'success' => true,
-                'message' => 'Users file was updated successfully',
+                'message' => 'User-file relation was updated successfully',
                 'data' => new UsersFileResource($usersFile->fresh())
             ], 200);
         } catch (Exception $ex) {
@@ -126,29 +111,21 @@ class UsersFileController extends Controller
     public function detroy($id)
     {
         try {
-            // Find users file
+            // Find user-file relation
             $usersFile = UsersFile::find($id);
 
-            // If userse file not found
-            if (!isset ($usersFile)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Users file not found'
-                ], 404);
-            }
-
-            // If users file delete processing is failed
+            // If user-file relation delete processing is failed
             if (!$usersFile->deleteOrFail()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Users file delete failed'
+                    'message' => 'User-file relation was deleted failed'
                 ], 500);
             }
 
             // Return message
             return response()->json([
                 'success' => true,
-                'message' => 'Users file was deleted successfully'
+                'message' => 'User-file relation was deleted successfully'
             ], 200);
         } catch (Exception $ex) {
             return response()->json([

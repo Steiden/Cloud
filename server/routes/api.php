@@ -6,6 +6,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Middleware\CheckFileExistsMiddleware;
 use App\Http\Middleware\CheckFileForUserMiddleware;
 use App\Http\Middleware\CheckFilesExistsMiddleware;
+use App\Http\Middleware\CheckUserFileRelationExistsMiddleware;
 use App\Http\Middleware\CheckUserMiddleware;
 use App\Http\Middleware\DatabaseTransactionMiddleware;
 use App\Http\Middleware\ValidateReceivedFilesMiddleware;
@@ -84,5 +85,39 @@ Route::prefix('files')->group(function () {
             Route::delete('/{id}', [FileController::class, 'destroy']);
         });
         
+    });
+});
+
+
+
+// ********************************
+// *** Что нужно сделать? ***
+// TODO - Добавить колонку владельца в таблице файлов
+// TODO - При добавлении отношения пользователь-файл проверять, что доступ к файлу добавляется его владельцем
+// ********************************
+
+
+
+// UsersFiles
+Route::prefix('users-files')->group(function () {
+    Route::middleware('jwt.auth')->group(function () {
+        // Get all user-file relations
+        Route::get('/', [FileController::class, 'index']);
+
+        // Store user-file relation
+        Route::post('/', [FileController::class, 'store']);
+
+        // Only if file exists
+        Route::middleware(CheckUserFileRelationExistsMiddleware::class)->group(function () {
+            // Show single user-file relation
+            Route::get('/{id}', [FileController::class, 'show']);
+    
+            // Update user-file relation
+            Route::put('/{id}', [FileController::class, 'update']);
+    
+            // Delete user-file relation
+            Route::delete('/{id}', [FileController::class, 'destroy']);
+        });
+
     });
 });

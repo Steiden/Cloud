@@ -23,6 +23,7 @@ class FileResource extends JsonResource
             'current_dir' => $this->current_dir,
             'size' => $this->size,
             'file_type' => new FileTypeResource(FileType::find($this->file_type_id)),
+            'owner' => new UserResource($this->owner),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at
         ];

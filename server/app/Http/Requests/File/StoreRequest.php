@@ -22,10 +22,7 @@ class StoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // 'name' => ['required', 'string', 'unique:files,name'],
-            // 'uri' => ['required', 'string'],
-            // 'size' => ['required', 'integer', 'min:0'],
-            // 'file_type_id' => ['required', 'integer', 'exists:file_types,id'],
+            'current_dir' => ['string'],
             'files' => ['required', 'array'],
         ];
     }

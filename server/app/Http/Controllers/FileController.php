@@ -45,8 +45,9 @@ class FileController extends Controller
     public function store(StoreRequest $request)
     {
         try {
-            // Get file
-            $files = $request->file('files');
+            // Get data from request
+            $data = $request->validated();
+            $files = $data->file('files');
 
             // Get user
             $user = auth()->user();
@@ -57,30 +58,35 @@ class FileController extends Controller
             // Create new files
             foreach ($files as $file) {
                 // If file not exists
-                if(!$this->checkFileNotExists($file)) {
+                if (!$this->checkFileNotExists($file)) {
                     return response()->json([
                         'success' => false,
                         'message' => 'File ' . $file->getClientOriginalName() . ' already exists'
                     ], 400);
                 }
 
+                // File's uri
+                $fileUri = $data['current_dir'] ? $user->id . '/' . $data['current_dir'] . '/' . $file->hashName() 
+                    : $user->id . '/' . $file->hashName();
+
                 // Store file
-                Storage::disk('uploads')->put(auth()->user()->id, $file);
+                Storage::disk('uploads')->put($fileUri, $file);
 
                 // Get data from file
-                $data = [
+                $dataForFile = [
                     'name' => $file->hashName(),
                     'original_name' => $file->getClientOriginalName(),
-                    'uri' => $user->id . '/' . $file->hashName(),
-                    'current_dir' => '/',
+                    'uri' => $fileUri,
+                    'current_dir' => $data['current_dir'] ? $data['current_dir'] : '/',
                     'size' => $file->getSize(),
                     'file_type_id' => FileType::all()->where('name', $file->extension())->first() ?
                         FileType::all()->where('name', $file->extension())->first()->id :
-                        FileType::all()->where('name', 'other')->first()->id
+                        FileType::all()->where('name', 'other')->first()->id,
+                    'owner' => $user->id
                 ];
 
                 // Add created file to files list
-                $file = File::create($data);
+                $file = File::create($dataForFile);
                 $filesToReturn[] = $file->fresh();
 
                 // Increase user's disk space in use
@@ -147,32 +153,32 @@ class FileController extends Controller
 
 
             // If uri if changed
-            if(isset($data['uri']) && $data['uri'] !== $file->current_dir) {
+            if (isset($data['uri']) && $data['uri'] !== $file->current_dir) {
                 // Move file to new uri
                 $storageFile = Storage::disk('uploads')->get($file->uri);
 
                 // Store and update file
-                if($data['uri'] !== '/') {
+                if ($data['uri'] !== '/') {
                     // File's uri
                     $fileUri = $data['uri'] === '.' ? $user->id . '/' . $file->name : $user->id . '/' . $data['uri'] . '/' . $file->name;
 
                     // Store file
                     Storage::disk('uploads')->put($fileUri, $storageFile);
-                    
+
                     // Delete old file
                     Storage::disk('uploads')->delete($file->uri);
-    
+
                     // Update file's uri
                     $file->update([
                         'uri' => $fileUri,
                         'current_dir' => $data['uri'] === '.' ? '/' : $data['uri']
                     ]);
                 }
-                
+
             }
 
             // If name if changed
-            if(isset($data['name']) && $data['name'] !== $file->name) {
+            if (isset($data['name']) && $data['name'] !== $file->name) {
                 // File name
                 $fileName = $data['name'] . '.' . FileType::find($file->file_type_id)->name;
 
@@ -246,7 +252,7 @@ class FileController extends Controller
         $userFilesOrigNames = File::all()->whereIn('id', $userFilesIds)->pluck('original_name');
 
         // Check file exists
-        if(!$userFilesOrigNames->contains($file->getClientOriginalName())) {
+        if (!$userFilesOrigNames->contains($file->getClientOriginalName())) {
             return true;
         }
 
