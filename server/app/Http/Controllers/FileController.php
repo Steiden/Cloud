@@ -139,22 +139,26 @@ class FileController extends Controller
             // Get validated data
             $data = $request->validated();
 
+            // Get file from request
+            $file = $request->file('file');
+
             // Get user
             $user = auth()->user();
 
             // Find file
-            $file = File::find($id);
+            $fileModel = File::find($id);
 
             // If user is not owner of file, local 'user' can be changed to 'owner' user
-            if($file->owner !== $user->id) {
-                $user = User::find($file->owner);
+            if ($fileModel->owner !== $user->id) {
+                $user = User::find($fileModel->owner);
             }
 
             // If nothing to update
             if (
-                (isset($data['uri']) && $data['uri'] === $file->current_dir) ||
-                (isset($data['uri']) && $data['uri'] === '.' && $file->current_dir === '/') ||
-                (isset($data['name']) && $data['name'] === $file->original_name)
+                (isset($data['uri']) && $data['uri'] === $fileModel->current_dir) ||
+                (isset($data['uri']) && $data['uri'] === '.' && $fileModel->current_dir === '/') ||
+                (isset($data['name']) && $data['name'] === $fileModel->original_name) ||
+                (isset($file) && $file->getContent() === Storage::disk('uploads')->get($fileModel->uri))
             ) {
 
                 return response()->json([
@@ -169,24 +173,24 @@ class FileController extends Controller
             // *********************
 
 
-            // If uri if changed
-            if (isset($data['uri']) && $data['uri'] !== $file->current_dir) {
+            // If uri is changed
+            if (isset($data['uri']) && $data['uri'] !== $fileModel->current_dir) {
                 // Move file to new uri
-                $storageFile = Storage::disk('uploads')->get($file->uri);
+                $storageFile = Storage::disk('uploads')->get($fileModel->uri);
 
                 // Store and update file
                 if ($data['uri'] !== '/') {
                     // File's uri
-                    $fileUri = $data['uri'] === '.' ? $user->id . '/' . $file->name : $user->id . '/' . $data['uri'] . '/' . $file->name;
+                    $fileUri = $data['uri'] === '.' ? $user->id . '/' . $fileModel->name : $user->id . '/' . $data['uri'] . '/' . $fileModel->name;
 
                     // Store file
                     Storage::disk('uploads')->put($fileUri, $storageFile);
 
                     // Delete old file
-                    Storage::disk('uploads')->delete($file->uri);
+                    Storage::disk('uploads')->delete($fileModel->uri);
 
                     // Update file's uri
-                    $file->update([
+                    $fileModel->update([
                         'uri' => $fileUri,
                         'current_dir' => $data['uri'] === '.' ? '/' : $data['uri']
                     ]);
@@ -194,34 +198,49 @@ class FileController extends Controller
 
             }
 
-            // If name if changed
-            if (isset($data['name']) && $data['name'] !== $file->name) {
+            // If name is changed
+            if (isset($data['name']) && $data['name'] !== $fileModel->name) {
                 // File name
-                $fileName = $data['name'] . '.' . FileType::find($file->file_type_id)->name;
+                $fileName = $data['name'] . '.' . FileType::find($fileModel->file_type_id)->name;
 
                 // Get hashed name for file
-                $hashedFileName = md5($user->id . '/' . $fileName) . '.' . FileType::find($file->file_type_id)->name;
+                $hashedFileName = md5($user->id . '/' . $fileName) . '.' . FileType::find($fileModel->file_type_id)->name;
 
                 // Rename file in storage
-                $fileFromStorage = Storage::disk('uploads')->get($file->uri);
-                Storage::disk('uploads')->put($user->id . '/' . $file->current_dir . '/' . $hashedFileName, $fileFromStorage);
+                $fileFromStorage = Storage::disk('uploads')->get($fileModel->uri);
+                Storage::disk('uploads')->put($user->id . '/' . $fileModel->current_dir . '/' . $hashedFileName, $fileFromStorage);
 
                 // Delete old file
-                Storage::disk('uploads')->delete($file->uri);
+                Storage::disk('uploads')->delete($fileModel->uri);
 
                 // Update file's name
-                $file->update([
+                $fileModel->update([
                     'name' => $hashedFileName,
                     'original_name' => $fileName,
-                    'uri' => $user->id . '/' . $file->current_dir . '/' . $hashedFileName
+                    'uri' => $user->id . '/' . $fileModel->current_dir . '/' . $hashedFileName
                 ]);
+            }
+
+            // If file content is changed
+            if(isset($file) && Storage::disk('uploads')->get($fileModel->uri) !== $file->getContent()) {
+                // Update file's content
+                Storage::disk('uploads')->put($fileModel->uri, $file->getContent());
+
+                // Decrease owner's disk space in use
+                $user->decrement('disk_space_used', $fileModel->size);
+
+                // Update file's size
+                $fileModel->update(['size' => Storage::disk('uploads')->size($fileModel->uri)]);
+
+                // Increase owner's disk space in use
+                $user->increment('disk_space_used', $fileModel->size);
             }
 
             // Return updated file
             return response()->json([
                 'success' => true,
                 'message' => 'File was updated',
-                'data' => new FileResource($file->fresh())
+                'data' => new FileResource($fileModel->fresh())
             ], 200);
         } catch (Exception $ex) {
             return response()->json([

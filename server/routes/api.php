@@ -7,6 +7,7 @@ use App\Http\Controllers\UsersFileController;
 use App\Http\Middleware\CheckFileExistsMiddleware;
 use App\Http\Middleware\CheckFileForUserMiddleware;
 use App\Http\Middleware\CheckFilesExistsMiddleware;
+use App\Http\Middleware\CheckRequestFileExtensionMiddleware;
 use App\Http\Middleware\CheckUserCanWriteMiddleware;
 use App\Http\Middleware\CheckUserFileRelationExistsMiddleware;
 use App\Http\Middleware\CheckUserIsOwnerOfFileForWrite;
@@ -86,7 +87,7 @@ Route::prefix('files')->group(function () {
             // Only for user who can write this file
             Route::middleware([CheckUserCanWriteMiddleware::class, CheckUserIsOwnerOfFileForWriteMiddleware::class])->group(function () {
                 // Update file
-                Route::put('/{id}', [FileController::class, 'update']);
+                Route::put('/{id}', [FileController::class, 'update'])->middleware(CheckRequestFileExtensionMiddleware::class);
 
                 // Delete file
                 Route::delete('/{id}', [FileController::class, 'destroy']);
@@ -99,7 +100,8 @@ Route::prefix('files')->group(function () {
 
 // ********************************
 // *** Что нужно сделать? ***
-// TODO - Добавить функционал в обновлении файла: также обновлять его содержимое
+// * Сделано/не сделано: ✅ ❌
+// TODO - Добавить функционал в обновлении файла: также обновлять его содержимое ✅
 //  TODO - Написать проверку, что расширение файла такое же, как и у прошлого
 // ********************************
 
