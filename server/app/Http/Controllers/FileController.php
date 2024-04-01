@@ -66,7 +66,7 @@ class FileController extends Controller
 
                 // File's uri
                 $currentDir = $request->current_dir;
-                $fileUri = $currentDir ? $user->id . '/' . $currentDir : $user->id . '/';
+                $fileUri = $currentDir ? $user->id . '/' . $currentDir . '/' : $user->id . '/';
 
                 // Store file
                 Storage::disk('uploads')->put($fileUri, $file);
