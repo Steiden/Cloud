@@ -145,6 +145,11 @@ class FileController extends Controller
             // Find file
             $file = File::find($id);
 
+            // If user is not owner of file, local 'user' can be changed to 'owner' user
+            if($file->owner !== $user->id) {
+                $user = User::find($file->owner);
+            }
+
             // If nothing to update
             if (
                 (isset($data['uri']) && $data['uri'] === $file->current_dir) ||

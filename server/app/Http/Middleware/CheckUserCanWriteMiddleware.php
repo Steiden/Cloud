@@ -8,7 +8,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class CheckUserIsOwnerOfFileMiddleware
+class CheckUserCanWriteMiddleware
 {
     /**
      * Handle an incoming request.
@@ -18,16 +18,16 @@ class CheckUserIsOwnerOfFileMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         // Get file's id
-        $usersFileId = $request->file_id ? $request->file_id : $request->route('id');
+        $fileId = $request->route('id');
 
         // Find file
-        $file = File::find(UsersFile::find($usersFileId)->file_id);
+        $file = File::find($fileId);
 
-        // Check if user is owner of file finded
-        if($file->owner !== auth()->user()->id) {
+        // Check if user can write this file
+        if (!UsersFile::all()->where('user_id', auth()->user()->id)->where('file_id', $fileId)->where('access_type_id', 2)->first()) {
             return response()->json([
                 'success' => false,
-                'message' => 'You are not owner of this file'
+                'message' => 'User cannot write this file'
             ], 403);
         }
 

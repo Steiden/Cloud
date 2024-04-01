@@ -7,7 +7,10 @@ use App\Http\Controllers\UsersFileController;
 use App\Http\Middleware\CheckFileExistsMiddleware;
 use App\Http\Middleware\CheckFileForUserMiddleware;
 use App\Http\Middleware\CheckFilesExistsMiddleware;
+use App\Http\Middleware\CheckUserCanWriteMiddleware;
 use App\Http\Middleware\CheckUserFileRelationExistsMiddleware;
+use App\Http\Middleware\CheckUserIsOwnerOfFileForWrite;
+use App\Http\Middleware\CheckUserIsOwnerOfFileForWriteMiddleware;
 use App\Http\Middleware\CheckUserIsOwnerOfFileMiddleware;
 use App\Http\Middleware\CheckUserMiddleware;
 use App\Http\Middleware\DatabaseTransactionMiddleware;
@@ -80,13 +83,15 @@ Route::prefix('files')->group(function () {
             // Show single file
             Route::get('/{id}', [FileController::class, 'show']);
 
-            // Update file
-            Route::put('/{id}', [FileController::class, 'update']);
+            // Only for user who can write this file
+            Route::middleware([CheckUserCanWriteMiddleware::class, CheckUserIsOwnerOfFileForWriteMiddleware::class])->group(function () {
+                // Update file
+                Route::put('/{id}', [FileController::class, 'update']);
 
-            // Delete file
-            Route::delete('/{id}', [FileController::class, 'destroy']);
+                // Delete file
+                Route::delete('/{id}', [FileController::class, 'destroy']);
+            });
         });
-
     });
 });
 
@@ -94,8 +99,6 @@ Route::prefix('files')->group(function () {
 
 // ********************************
 // *** Что нужно сделать? ***
-// TODO - При добавлении отношения пользователь-файл проверять, что доступ к файлу добавляется его владельцем
-// TODO - Добавить разграничение на действия с файлами в зависимости от доступа
 // ********************************
 
 
