@@ -3,10 +3,12 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\UsersFileController;
 use App\Http\Middleware\CheckFileExistsMiddleware;
 use App\Http\Middleware\CheckFileForUserMiddleware;
 use App\Http\Middleware\CheckFilesExistsMiddleware;
 use App\Http\Middleware\CheckUserFileRelationExistsMiddleware;
+use App\Http\Middleware\CheckUserIsOwnerOfFileMiddleware;
 use App\Http\Middleware\CheckUserMiddleware;
 use App\Http\Middleware\DatabaseTransactionMiddleware;
 use App\Http\Middleware\ValidateReceivedFilesMiddleware;
@@ -84,7 +86,7 @@ Route::prefix('files')->group(function () {
             // Delete file
             Route::delete('/{id}', [FileController::class, 'destroy']);
         });
-        
+
     });
 });
 
@@ -93,6 +95,7 @@ Route::prefix('files')->group(function () {
 // ********************************
 // *** Что нужно сделать? ***
 // TODO - При добавлении отношения пользователь-файл проверять, что доступ к файлу добавляется его владельцем
+// TODO - Добавить разграничение на действия с файлами в зависимости от доступа
 // ********************************
 
 
@@ -101,22 +104,24 @@ Route::prefix('files')->group(function () {
 Route::prefix('users-files')->group(function () {
     Route::middleware('jwt.auth')->group(function () {
         // Get all user-file relations
-        Route::get('/', [FileController::class, 'index']);
+        Route::get('/', [UsersFileController::class, 'index']);
 
-        // Store user-file relation
-        Route::post('/', [FileController::class, 'store']);
+        // Only if user is owner of file
+        Route::middleware(CheckUserIsOwnerOfFileMiddleware::class)->group(function () {
+            // Store user-file relation
+            Route::post('/', [UsersFileController::class, 'store']);
 
-        // Only if file exists
-        Route::middleware(CheckUserFileRelationExistsMiddleware::class)->group(function () {
-            // Show single user-file relation
-            Route::get('/{id}', [FileController::class, 'show']);
-    
-            // Update user-file relation
-            Route::put('/{id}', [FileController::class, 'update']);
-    
-            // Delete user-file relation
-            Route::delete('/{id}', [FileController::class, 'destroy']);
+            // Only if file exists
+            Route::middleware(CheckUserFileRelationExistsMiddleware::class)->group(function () {
+                // Show single user-file relation
+                Route::get('/{id}', [UsersFileController::class, 'show']);
+
+                // Update user-file relation
+                Route::put('/{id}', [UsersFileController::class, 'update']);
+
+                // Delete user-file relation
+                Route::delete('/{id}', [UsersFileController::class, 'destroy']);
+            });
         });
-
     });
 });
