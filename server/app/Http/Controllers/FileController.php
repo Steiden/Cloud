@@ -232,6 +232,9 @@ class FileController extends Controller
             // Get file
             $file = File::find($id);
 
+            // Delete file from storage
+            Storage::disk('uploads')->delete($file->uri);
+
             // Decrease user disk space in use
             User::find(auth()->user()->id)->decrement('disk_space_used', $file->size);
 
