@@ -10,6 +10,7 @@ use App\Http\Middleware\CheckFilesExistsMiddleware;
 use App\Http\Middleware\CheckRequestFileExtensionMiddleware;
 use App\Http\Middleware\CheckUserCanWriteMiddleware;
 use App\Http\Middleware\CheckUserFileRelationExistsMiddleware;
+use App\Http\Middleware\CheckUserIsOwnerOfFileForMoveMiddleware;
 use App\Http\Middleware\CheckUserIsOwnerOfFileForWrite;
 use App\Http\Middleware\CheckUserIsOwnerOfFileForWriteMiddleware;
 use App\Http\Middleware\CheckUserIsOwnerOfFileMiddleware;
@@ -85,7 +86,7 @@ Route::prefix('files')->group(function () {
             Route::get('/{id}', [FileController::class, 'show']);
 
             // Only for user who can write this file
-            Route::middleware([CheckUserCanWriteMiddleware::class, CheckUserIsOwnerOfFileForWriteMiddleware::class])->group(function () {
+            Route::middleware([CheckUserCanWriteMiddleware::class, CheckUserIsOwnerOfFileForMoveMiddleware::class])->group(function () {
                 // Update file
                 Route::put('/{id}', [FileController::class, 'update']);
 
