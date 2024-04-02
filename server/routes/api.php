@@ -87,7 +87,10 @@ Route::prefix('files')->group(function () {
             // Only for user who can write this file
             Route::middleware([CheckUserCanWriteMiddleware::class, CheckUserIsOwnerOfFileForWriteMiddleware::class])->group(function () {
                 // Update file
-                Route::put('/{id}', [FileController::class, 'update'])->middleware(CheckRequestFileExtensionMiddleware::class);
+                Route::put('/{id}', [FileController::class, 'update']);
+
+                // Update file's content in storage
+                Route::post('/{id}/content', [FileController::class, 'updateContent'])->middleware(CheckRequestFileExtensionMiddleware::class);;
 
                 // Delete file
                 Route::delete('/{id}', [FileController::class, 'destroy']);
@@ -101,8 +104,6 @@ Route::prefix('files')->group(function () {
 // ********************************
 // *** Что нужно сделать? ***
 // * Сделано/не сделано: ✅ ❌
-// TODO - Добавить функционал в обновлении файла: также обновлять его содержимое ✅
-//  TODO - Написать проверку, что расширение файла такое же, как и у прошлого
 // ********************************
 
 

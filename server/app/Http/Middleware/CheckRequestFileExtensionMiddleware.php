@@ -24,7 +24,7 @@ class CheckRequestFileExtensionMiddleware
         $fileModel = File::find($request->route('id'));
 
         // If request file extension is not equal to file extension from database
-        if(isset($file) && isset($fileModel) && $file->getExtension() !== FileType::find($fileModel->file_type_id)->name) {
+        if($file->getClientOriginalExtension() !== FileType::find($fileModel->file_type_id)->name) {
             return response()->json([
                 'success' => false,
                 'message' => 'File extension is not valid'

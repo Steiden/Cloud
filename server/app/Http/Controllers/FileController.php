@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\File\DeleteRequest;
 use App\Http\Requests\File\StoreRequest;
+use App\Http\Requests\File\UpdateContentRequest;
 use App\Http\Requests\File\UpdateRequest;
 use App\Http\Resources\FileResource;
 use App\Http\Resources\UsersFileResource;
@@ -139,9 +140,6 @@ class FileController extends Controller
             // Get validated data
             $data = $request->validated();
 
-            // Get file from request
-            $file = $request->file('file');
-
             // Get user
             $user = auth()->user();
 
@@ -157,8 +155,7 @@ class FileController extends Controller
             if (
                 (isset($data['uri']) && $data['uri'] === $fileModel->current_dir) ||
                 (isset($data['uri']) && $data['uri'] === '.' && $fileModel->current_dir === '/') ||
-                (isset($data['name']) && $data['name'] === $fileModel->original_name) ||
-                (isset($file) && $file->getContent() === Storage::disk('uploads')->get($fileModel->uri))
+                (isset($data['name']) && $data['name'] === $fileModel->original_name)
             ) {
 
                 return response()->json([
@@ -221,21 +218,6 @@ class FileController extends Controller
                 ]);
             }
 
-            // If file content is changed
-            if(isset($file) && Storage::disk('uploads')->get($fileModel->uri) !== $file->getContent()) {
-                // Update file's content
-                Storage::disk('uploads')->put($fileModel->uri, $file->getContent());
-
-                // Decrease owner's disk space in use
-                $user->decrement('disk_space_used', $fileModel->size);
-
-                // Update file's size
-                $fileModel->update(['size' => Storage::disk('uploads')->size($fileModel->uri)]);
-
-                // Increase owner's disk space in use
-                $user->increment('disk_space_used', $fileModel->size);
-            }
-
             // Return updated file
             return response()->json([
                 'success' => true,
@@ -275,6 +257,60 @@ class FileController extends Controller
                 'success' => true,
                 'message' => 'File was delete successfully'
             ]);
+        } catch (Exception $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateContent(UpdateContentRequest $request, $id)
+    {
+        try {
+            // Get user
+            $user = User::find(auth()->user()->id);
+
+            // Get file from request
+            $file = $request->file('file');
+
+            // Get file model from database
+            $fileModel = File::find($id);
+
+            // Get file from storage
+            $fileStorage = Storage::disk('uploads')->get($fileModel->uri);
+
+            // If file's content from request is the same as file's content in storage
+            if ($file->getContent() === $fileStorage) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nothing to update'
+                ]);
+            }
+
+            // Delete old file
+            Storage::disk('uploads')->delete($fileModel->uri);
+
+            // Decrease user's disk space in use
+            $user->decrement('disk_space_used', $fileModel->size);
+
+            // Update file model
+            $fileModel->update([
+                'size' => $file->getSize(),
+            ]);
+
+            // Increase user's disk space in use
+            $user->increment('disk_space_used', $file->getSize());
+
+            // Put new file in storage
+            Storage::disk('uploads')->put(auth()->user()->id . '/' . $fileModel->current_dir, $file);
+
+
+            // Return success response
+            return response()->json([
+                'success' => true,
+                'message' => 'File was updated',
+            ], 200);
         } catch (Exception $ex) {
             return response()->json([
                 'success' => false,
